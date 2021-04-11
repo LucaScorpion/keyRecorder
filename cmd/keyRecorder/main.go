@@ -1,7 +1,13 @@
 package main
 
-import "keyRecorder/internal/keyRecorder"
+import (
+	"bufio"
+	"keyRecorder/internal/keyRecorder"
+	"os"
+)
 
 func main() {
-	keyRecorder.RecordKeys(0x1B)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+	keyRecorder.RecordKeys(0x1B, w)
 }

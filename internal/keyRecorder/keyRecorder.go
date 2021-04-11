@@ -1,6 +1,7 @@
 package keyRecorder
 
 import (
+	"bufio"
 	"fmt"
 	"golang.org/x/sys/windows"
 	"time"
@@ -15,6 +16,7 @@ var (
 type keyStateChange struct {
 	vKey uint8
 	down bool
+	timestamp int64
 }
 
 func isKeyDown(vKey uint8) bool {
@@ -55,6 +57,7 @@ func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
 				changes <- keyStateChange{
 					vKey: vKey,
 					down: down,
+					timestamp: unixMilli(),
 				}
 			}
 		}
@@ -64,16 +67,21 @@ func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
 	}
 }
 
-func RecordKeys(stopKey uint8) {
-	startMillis := unixMilli()
+func RecordKeys(stopKey uint8, w *bufio.Writer) {
 	changes := make(chan keyStateChange)
-
 	go watchStateChanges(changes, stopKey)
 
+	prevMillis := unixMilli()
 	for change := range changes {
-		diffMillis := unixMilli() - startMillis
-		// TODO
-		fmt.Println(diffMillis)
-		fmt.Println(change)
+		diffMillis := change.timestamp - prevMillis
+		prevMillis = change.timestamp
+
+		keyOp := "Up"
+		if change.down {
+			keyOp = "Down"
+		}
+		if _, err := w.WriteString(fmt.Sprintf("sleep %d\nvKey%s %d\n", diffMillis, keyOp, change.vKey)); err != nil {
+			panic(err)
+		}
 	}
 }
