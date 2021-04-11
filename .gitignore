@@ -1,0 +1,5 @@
+# Build
+*.exe
+
+# IDEs
+.idea/
