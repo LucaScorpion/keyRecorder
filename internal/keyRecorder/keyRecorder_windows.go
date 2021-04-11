@@ -14,8 +14,8 @@ var (
 )
 
 type keyStateChange struct {
-	vKey uint8
-	down bool
+	vKey      uint8
+	down      bool
 	timestamp int64
 }
 
@@ -55,8 +55,8 @@ func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
 			// Check if the key state changed.
 			if down != lastState[vKey] {
 				changes <- keyStateChange{
-					vKey: vKey,
-					down: down,
+					vKey:      vKey,
+					down:      down,
 					timestamp: unixMilli(),
 				}
 			}
@@ -68,20 +68,29 @@ func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
 }
 
 func RecordKeys(stopKey uint8, w *bufio.Writer) {
+	// Make a first call to GetAsyncKeyState and discard the result,
+	// so all next calls return clean results.
+	getKeyStates()
+
 	changes := make(chan keyStateChange)
 	go watchStateChanges(changes, stopKey)
 
-	prevMillis := unixMilli()
+	prevMillis := int64(0)
 	for change := range changes {
 		diffMillis := change.timestamp - prevMillis
-		prevMillis = change.timestamp
 
+		// Sleep.
+		if prevMillis > 0 && diffMillis > 0 {
+			w.WriteString(fmt.Sprintf("sleep %d\n", diffMillis))
+		}
+
+		// Key operation.
 		keyOp := "Up"
 		if change.down {
 			keyOp = "Down"
 		}
-		if _, err := w.WriteString(fmt.Sprintf("sleep %d\nvKey%s %d\n", diffMillis, keyOp, change.vKey)); err != nil {
-			panic(err)
-		}
+		w.WriteString(fmt.Sprintf("vKey%s %d\n", keyOp, change.vKey))
+
+		prevMillis = change.timestamp
 	}
 }
