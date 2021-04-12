@@ -37,7 +37,7 @@ func getKeyStates() map[uint8]bool {
 }
 
 func unixMilli() int64 {
-	return time.Now().UnixNano() / 1000000
+	return time.Now().UnixNano() / 1_000_000
 }
 
 func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
@@ -75,22 +75,22 @@ func RecordKeys(stopKey uint8, w *bufio.Writer) {
 	changes := make(chan keyStateChange)
 	go watchStateChanges(changes, stopKey)
 
-	prevMillis := int64(0)
+	w.WriteString("timestamps {\n")
+	startMillis := int64(0)
 	for change := range changes {
-		diffMillis := change.timestamp - prevMillis
-
-		// Sleep.
-		if prevMillis > 0 && diffMillis > 0 {
-			w.WriteString(fmt.Sprintf("sleep %d\n", diffMillis))
+		if startMillis == 0 {
+			startMillis = change.timestamp
 		}
+
+		// Current timestamp.
+		curMillis := change.timestamp - startMillis
 
 		// Key operation.
 		keyOp := "Up"
 		if change.down {
 			keyOp = "Down"
 		}
-		w.WriteString(fmt.Sprintf("vKey%s %d\n", keyOp, change.vKey))
-
-		prevMillis = change.timestamp
+		w.WriteString(fmt.Sprintf("\t%d vKey%s %d\n", curMillis, keyOp, change.vKey))
 	}
+	w.WriteString("}\n")
 }
