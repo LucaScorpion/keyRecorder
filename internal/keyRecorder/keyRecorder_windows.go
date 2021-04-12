@@ -67,7 +67,13 @@ func watchStateChanges(changes chan keyStateChange, stopKey uint8) {
 	}
 }
 
-func RecordKeys(stopKey uint8, w *bufio.Writer) {
+func RecordKeys(stopKey uint8, w *bufio.Writer, ignore []int) {
+	// Create a map from the ignore values for easy lookup.
+	ignoreMap := make(map[uint8]bool, len(ignore))
+	for _, v := range ignore {
+		ignoreMap[uint8(v)] = true
+	}
+
 	// Make a first call to GetAsyncKeyState and discard the result,
 	// so all next calls return clean results.
 	getKeyStates()
@@ -78,6 +84,12 @@ func RecordKeys(stopKey uint8, w *bufio.Writer) {
 	w.WriteString("timestamps {\n")
 	startMillis := int64(0)
 	for change := range changes {
+		// Check if the key should be ignored.
+		if _, ok := ignoreMap[change.vKey]; ok {
+			continue
+		}
+
+		// If this is the first event, set the start time.
 		if startMillis == 0 {
 			startMillis = change.timestamp
 		}

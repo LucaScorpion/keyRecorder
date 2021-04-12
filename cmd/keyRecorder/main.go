@@ -11,6 +11,7 @@ import (
 var options struct {
 	File     string `arg:"positional"`
 	StopCode int    `arg:"-s" placeholder:"CODE" default:"27" help:"the virtual key code to listen for to stop recording (defaults to escape)"`
+	Ignore   []int  `arg:"-i,separate" placeholder:"CODE" help:"virtual key codes to ignore"`
 }
 
 func main() {
@@ -39,5 +40,5 @@ func main() {
 	defer w.Flush()
 
 	// Start recording.
-	keyRecorder.RecordKeys(uint8(options.StopCode), w)
+	keyRecorder.RecordKeys(uint8(options.StopCode), w, options.Ignore)
 }

@@ -15,3 +15,9 @@ By default, it will record keys until the escape key is pressed. To change this 
 ```
 keyRecorder output.txt -s 8
 ```
+
+You can ignore certain keys by passing the `-i` option with a virtual key code. This argument can be specified multiple times. For example, to ignore left mouse clicks and enter:
+
+```
+keyRecorder output.txt -i 1 -i 13
+```
